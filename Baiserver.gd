@@ -6,13 +6,24 @@ var connections := {}
 
 var c := 0
 
+var poll_timer = Timer.new()
+const POLL_TIME = 0.5
+
+export var listen_port = 6969
+
 func _ready() -> void:
-	var peer := NetworkedMultiplayerENet.new()
-	peer.create_server(6969)
-	get_tree().network_peer = peer
+	var server := WebSocketServer.new()
+	server.listen(listen_port,[],true)
+	get_tree().network_peer = server
 	get_tree().connect("network_peer_connected", self, "_player_connected")
 	get_tree().connect("network_peer_disconnected", self, "_player_disconnected")
+	poll_timer.wait_time = POLL_TIME
+	poll_timer.connect("timeout", self, "_poll")
+	add_child(poll_timer)
+	poll_timer.start()
 
+func _poll():
+	get_tree().network_peer.poll()
 
 func _player_connected(id:int) -> void:
 	waitlist.append(id)
